@@ -167,7 +167,7 @@ def write_to_df(df: pd.DataFrame, img_path: str, w: int, h: int, csv_path: str, 
     for i in range(len(boxes)):
         if not disable_thresh and scores[i] < thresh:
             continue
-        box = image_decode(rect=boxes[i])
+        box = image_decode(rect=boxes[i], img = None)
         dict_list.append({'filename': img_path, 'width': w, 'height': h, 'class': class_label,
                           'score': scores[i], 'xmin': box[0], 'ymin': box[1], 'xmax': box[2], 'ymax': box[3]})
     if len(dict_list) != 0:
@@ -192,12 +192,12 @@ def draw_boxes(orig_img: np.ndarray, boxes: np.ndarray, scores: np.ndarray, thre
     Returns:
         np.ndarray: [description]
     """
-    img = image_decode(img=orig_img)
+    img = image_decode(img=orig_img, rect=None)
 
     for i in range(len(boxes)):
         x1, y1, x2, y2 = boxes[i]
         conf = scores[i]
-        x1, y1, x2, y2 = image_decode(rect=(x1, y1, x2, y2))
+        x1, y1, x2, y2 = image_decode(rect=(x1, y1, x2, y2), img = None)
         if not disable_thresh and conf < thresh:
             continue
 

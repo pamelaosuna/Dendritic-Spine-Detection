@@ -1,3 +1,9 @@
+# ouput files obtained from prediction
+output/prediction/default_model/csvs
+
+# input data
+data/raw/*.png
+
 # annotation files which cannot be used like this as images are missing
 data/default_annotations/*.csv
 
@@ -145,3 +151,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# DS store files
+*.DS_store
+
+# model
+model.zip
+
+# images and csv files
+output/prediction/default_model/csvs/
+output/prediction/default_model/images/
+output/tracking/default_model
