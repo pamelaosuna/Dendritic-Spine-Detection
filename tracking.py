@@ -24,11 +24,11 @@ parser.add_argument('-t', '--threshold',
 parser.add_argument('-a', '--appeared',
                     help='appeared counter', default=0, type=int)
 parser.add_argument('-d', '--disappeared',
-                    help='disappeared counter', default=1, type=int)
+                    help='disappeared counter', default=3, type=int)
 parser.add_argument('-th', '--theta',
                     help='Threshold for theta (detection similarity threshold)', default=0.5, type=float)
 parser.add_argument('-ta', '--tau',
-                    help='Threshold for tau (tracking threshold)', default=0.3, type=float)
+                    help='Threshold for tau (tracking threshold)', default=0.5, type=float)
 parser.add_argument('-m', '--model',
                     help='Path to model you want to analyze with')
 parser.add_argument('-c', '--csv', required=False,
@@ -68,7 +68,7 @@ def draw_boxes(img: np.ndarray, objects: OrderedDict) -> np.ndarray:
 
         # color = (255*(1-conf), 255*conf, 255*conf)
         color = (0, 255, 0)
-        img = cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness=2)
+        img = cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness=1)
 
         # green filled rectangle for text
         color = (0, 255, 0)
@@ -76,8 +76,7 @@ def draw_boxes(img: np.ndarray, objects: OrderedDict) -> np.ndarray:
         img = cv2.rectangle(img, (x1, y1), (x1+25, y1-12), color, thickness=-1)
 
         # text
-        img = cv2.putText(img, '{:02.0f}%'.format(
-            conf*100), (x1+2, y1-3), cv2.FONT_HERSHEY_SIMPLEX, 0.3, text_color, 1)
+        img = cv2.putText(img, str(key), (x1+2, y1-3), cv2.FONT_HERSHEY_SIMPLEX, 0.3, text_color, 1)
     return img
 
 
@@ -223,9 +222,9 @@ if __name__ == '__main__':
                 i], all_scores[i], all_classes[i], all_num_detections[i]
         boxes = boxes[0]
 
-        # look if there are some boxes
-        if len(boxes) == 0:
-            continue
+        # # look if there are some boxes
+        # if len(boxes) == 0:
+        #     continue
 
         # convert all detections from different stacks into one stack (via offset matlab files)
         if args.use_offsets:
@@ -279,6 +278,7 @@ if __name__ == '__main__':
         if args.save_images:
             image_np = cv2.imread(img)
             image_np = draw_boxes(image_np, objects)
+            cv2.imwrite(img_output_path + '/' + img.split('/')[-1], image_np)
 
     # delete all double elements
     all_dicts = [dict(tup)

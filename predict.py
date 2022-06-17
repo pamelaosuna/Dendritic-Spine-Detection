@@ -330,7 +330,7 @@ def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str,
                 boxes = boxes[:, [1, 0, 3, 2]]
 
                 # find out where scores are greater than at threshold and change everything according to that
-                thresh_indices = np.where(scores >= threshold)[0]
+                thresh_indices = np.where(scores >= args.threshold)[0]
                 boxes = boxes[thresh_indices]
                 scores = scores[thresh_indices]
                 classes = classes[thresh_indices]
