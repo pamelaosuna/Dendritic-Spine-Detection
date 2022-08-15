@@ -385,7 +385,6 @@ if __name__ == '__main__':
     if args.save_images and not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    print(output_path, model_name, csv_path)
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     PATH_TO_CKPT = os.path.join(
         'own_models', args.model, 'frozen_inference_graph.pb')

@@ -33,8 +33,8 @@ def calc_metric_xy(centroid1: Optional[List] = None, centroid2: Optional[List] =
         x11, x12, y11, y12 = cX1-w1/2, cX1+w1/2, cY1-h1/2, cY1+h1/2
         x21, x22, y21, y22 = cX2-w2/2, cX2+w2/2, cY2-h2/2, cY2+h2/2
     elif rect1 is not None and rect2 is not None:
-        x11, y11, x12, y12 = rect1
-        x21, y21, x22, y22 = rect2
+        x11, y11, x12, y12 = rect1[:4]
+        x21, y21, x22, y22 = rect2[:4]
     else:
         raise AttributeError(
             "You have to provide either two centroids or two boxes but neither is given.")
@@ -89,7 +89,7 @@ def calc_metric_z(centroid1: List, centroid2: List) -> float:
     return intersection/min_val
 
 
-def calc_metric(centroid1: List, centroid2: List, metric: str = 'iom') -> float:
+def calc_metric(centroid1: List = None, centroid2: List = None, rect1: List = None, rect2= None, metric: str = 'iom') -> float:
     """Combine IoM in xy and in z-direction
 
     Args:
@@ -100,9 +100,16 @@ def calc_metric(centroid1: List, centroid2: List, metric: str = 'iom') -> float:
     Returns:
         float: overall F_1-3D-score of both centroids
     """
-    # how to combine both metrics
-    iom = calc_metric_xy(centroid1, centroid2, metric=metric)
-    z_iom = calc_metric_z(centroid1, centroid2)
+    if centroid1 is not None and centroid2 is not None:
+        # how to combine both metrics
+        iom = calc_metric_xy(centroid1, centroid2, metric=metric)
+        z_iom = calc_metric_z(centroid1, centroid2)
+    elif rect1 is not None and rect2 is not None:
+        iom = calc_metric_xy(rect1=rect1, rect2=rect2, metric=metric)
+        z_iom = calc_metric_z(rect1, rect2)
+    else:
+        raise AttributeError(
+            "You have to provide either two centroids or two boxes but neither is given.")
 
     # use similar formula to fscore, but replace precision and recall with iom and z_iom
     # beta=low because z_iom should not count that much
