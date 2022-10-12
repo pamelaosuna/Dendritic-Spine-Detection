@@ -87,24 +87,26 @@ def csv_to_boxes(df: pd.DataFrame) -> Tuple[List]:
         df (pd.DataFrame): Dataframe of interest
 
     Returns:
-        Tuple[List]: Tuple containing boxes, scores, classes, num detections 
+        Tuple[List]: Tuple containing boxes, scores, num detections 
     """
-    boxes, scores, classes = [], [], []
-    for i in range(len(df)):
-        if len(df.iloc[i]) == 8:
-            filename, w, h, class_name, x1, y1, x2, y2 = df.iloc[i]
-            score = 1.0
-        else:
-            filename, w, h, class_name, score, x1, y1, x2, y2 = df.iloc[i]
-        scores.append(score)
-        classes.append(1)  # all are spines
-        # boxes are in y1, x1, y2, x2 format!!!
-        boxes.append([x1/w, y1/h, x2/w, y2/h])
-    boxes = [boxes]
-    scores = [scores]
-    classes = [classes]
-    num_detections = [len(scores[0])]
-    return boxes, scores, classes, num_detections
+    scores = df['score'].values
+    boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values
+
+    # if 'width' in df.columns and 'height' in df.columns:
+    #     w = df['width'].values[0]
+    #     h = df['height'].values[0]
+    # else:
+    #     w = default_w
+    #     h = default_h
+    
+    # # divide by image size
+    # boxes[:, 0] /= w
+    # boxes[:, 1] /= h
+    # boxes[:, 2] /= w
+    # boxes[:, 3] /= h
+
+    num_detections = len(scores)
+    return boxes, scores, num_detections
 
 def main(args):
     # args = parser.parse_args()
@@ -114,7 +116,6 @@ def main(args):
     MIN_APP = args.appeared
     MAX_DIS = args.disappeared
     METRIC = args.metric
-    NUM_CLASSES = 1
     MAX_VOL = 2000
 
     if args.images is None:
@@ -139,7 +140,6 @@ def main(args):
 
     all_dicts = []
     total_boxes = []
-    total_classes = []
     total_scores = []
     nr_imgs = len(list(all_imgs))
     objects = dict()
@@ -152,7 +152,7 @@ def main(args):
                 'No csv files with valid prediction data are available.')
         csv_path = args.csv
 
-    # get all boxes, scores and classes at the start if prediction is necessary:
+    # get all boxes and scores at the start if prediction is necessary:
     if args.csv is None:
         raise ValueError("Error: csv file with prediction data not specified")
 
@@ -175,7 +175,7 @@ def main(args):
                     csv_path = csv_path[0]
                 try:
                     new_df = pd.read_csv(csv_path)
-                    boxes, scores, classes, num_detections = csv_to_boxes(
+                    boxes, scores, num_detections = csv_to_boxes(
                         new_df)
                 except:
                     continue
@@ -187,28 +187,28 @@ def main(args):
                     new_df = new_df[new_df.apply(lambda row: os.path.splitext(
                         orig_img)[0] in row['filename'], axis=1)]  # axis=1 for looping through rows
 
-                    boxes, scores, classes, num_detections = csv_to_boxes(
+                    boxes, scores, num_detections = csv_to_boxes(
                         new_df)
                 except:
                     continue
 
-        boxes = boxes[0]
+        # boxes = boxes[0]
 
-        scores = scores[0]
-        num_detections = int(num_detections[0])
+        # scores = scores[0]
+        # num_detections = int(num_detections[0])
 
-        image_np = cv2.imread(img)
+        img_path = '/' + img.split('../')[-1]
+        image_np = cv2.imread(img_path)
         h, w = image_np.shape[:2]
         # Real tracking part!
-        rects = np.array([[boxes[i][0]*w, boxes[i][1]*h,
-                           boxes[i][2]*w, boxes[i][3]*h, scores[i]] for i in range(num_detections)
+        rects = np.array([[boxes[i][0], boxes[i][1],
+                           boxes[i][2], boxes[i][3], scores[i]] for i in range(num_detections)
                           if scores[i] >= THRESH])
 
         objects = ct.update(rects)  # y1, x1, y2, x2 - format
 
         # Start with non-empty lists
         boxes = []
-        classes = []
         scores = []
 
         # DO NOT USE absolute path for images!
@@ -217,12 +217,11 @@ def main(args):
             orig_dict = {'filename': total_path,
                          'width': w, 'height': h, 'class': 'spine'}
 
-            # Making boxes, classes, scores correct
+            # Making boxes, scores correct
             cX, cY, width, height, conf = objects[key]
             x1, x2 = (cX-width/2)/w, (cX+width/2)/w
             y1, y2 = (cY-height/2)/h, (cY+height/2)/h
             boxes.append([x1, y1, x2, y2])
-            classes.append(1)
             scores.append(conf)
 
             orig_dict.update({'id': key, 'ymin': round(y1*h, 2), 'ymax': round(y2*h, 2), 'xmin': round(x1*w, 2),
@@ -231,10 +230,8 @@ def main(args):
             all_dicts.append(orig_dict)
 
         boxes = np.array(boxes)
-        classes = np.array(classes)
         scores = np.array(scores)
         total_boxes.append(boxes)
-        total_classes.append(classes)
         total_scores.append(scores)
 
         if args.save_images:
