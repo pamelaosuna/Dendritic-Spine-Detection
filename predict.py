@@ -7,7 +7,7 @@ import cv2
 import argparse
 import pandas as pd
 import time
-from utils import calc_metric_xy
+from spine_tracking.dendritic_spine_detection import utils as detection_utils
 from typing import List, Optional, Tuple
 from pathlib import Path
 sys.path.append("..")
@@ -110,7 +110,7 @@ def postprocess(boxes: np.ndarray, scores: np.ndarray, theta: float = 0.5) -> Tu
     cluster_ids = list(range(len(boxes)))
     for i in range(len(boxes)):
         for j in range(i+1, len(boxes)):
-            iom = calc_metric_xy(rect1=boxes[i], rect2=boxes[j])
+            iom = detection_utils.calc_metric_xy(rect1=boxes[i], rect2=boxes[j])
             if iom >= theta:
                 # set cluster id of following point to that of the current pnt
                 # this order is correct, as that is already fixed from previous rounds
@@ -235,6 +235,7 @@ def df_to_data(df: pd.DataFrame) -> Tuple[List]:
     # get rects (boxes+scores) and classes for this specific dataframe
     rects = np.zeros((len(df), 5))
     scores = np.zeros(len(df))
+    classes = np.zeros(len(df))
 
     if len(df) == 0:
         return rects, scores
@@ -271,7 +272,7 @@ def load_model(path: str) -> tf.Graph:
 
 
 def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str, output_csv_path: str,
-                   threshold: float = 0.3, save_csv: bool = True) -> Tuple[np.ndarray]:
+                   threshold: float = 0.3, save_csv: bool = True, theta: float = 0.7) -> Tuple[np.ndarray]:
     """Predict detection on image
 
     Args:
@@ -330,12 +331,12 @@ def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str,
                 boxes = boxes[:, [1, 0, 3, 2]]
 
                 # find out where scores are greater than at threshold and change everything according to that
-                thresh_indices = np.where(scores >= args.threshold)[0]
+                thresh_indices = np.where(scores >= threshold)[0]
                 boxes = boxes[thresh_indices]
                 scores = scores[thresh_indices]
                 classes = classes[thresh_indices]
 
-                boxes, scores = postprocess(boxes, scores, theta=args.theta)
+                boxes, scores = postprocess(boxes, scores, theta=theta)
 
                 # Visualization of the results of a detection, but only if output_path is provided
                 if output_path is not None:
@@ -354,11 +355,8 @@ def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str,
 
     return all_boxes, all_scores, all_classes, all_num_detections
 
-
-if __name__ == '__main__':
+def main(args):
     start = time.time()
-    args = parser.parse_args()
-
     # if it doesn't make sense, print warning
     if args.use_csv is not None and not args.save_images:
         print("[WARNING] As you are using csv files, not saving any detections will result in doing nothing."
@@ -370,11 +368,11 @@ if __name__ == '__main__':
         "/")[-1] if args.model.split("/")[-1] != "" else args.model.split("/")[-2]
     if args.output is None:
         args.output = os.path.join("output/prediction/", model_name)
-    output_path = os.path.join(args.output, "images")
+    output_path = os.path.join(args.output, model_name, "images")
 
     # create folder for prediction csvs if not already done
     if not args.use_csv:
-        csv_path = os.path.join(args.output, 'csvs')
+        csv_path = os.path.join(args.output, model_name, 'csvs')
     else:
         csv_path = args.use_csv
     if not os.path.exists(csv_path):
@@ -387,7 +385,7 @@ if __name__ == '__main__':
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     PATH_TO_CKPT = os.path.join(
-        'own_models', args.model, 'frozen_inference_graph.pb')
+        os.path.dirname(__file__), 'own_models', args.model, 'frozen_inference_graph.pb')
 
     # Decide whether to predict the bboxes or to load from csv
     if not args.use_csv:
@@ -401,8 +399,8 @@ if __name__ == '__main__':
     nr_imgs = len(list(glob.glob(args.input)))
     print("[INFO] Starting predictions ...")
     if not args.use_csv:
-        _ = predict_images(detection_graph, args.input,
-                          output_path, csv_path, args.threshold)
+        _ = predict_images(detection_graph, args.input, output_path, csv_path,
+                        threshold=args.threshold, theta=args.theta)
     else:
         changed_df = False
         for img in glob.glob(args.input):
@@ -431,3 +429,8 @@ if __name__ == '__main__':
     finished = time.time()
     print(f"Model read in {after_loading_model-start}sec")
     print(f"Predicted {nr_imgs} images in {finished-after_loading_model}sec")
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    main(args)
