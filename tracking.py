@@ -166,17 +166,19 @@ def main(args):
             raise ValueError(
                 'No csv files with valid prediction data are available.')
 
-    all_csv_paths = list(Path().rglob(csv_path))
+    all_csv_paths = sorted(all_csv_files)
+    # all_csv_paths = list(Path().rglob(csv_path))
+
 
     ct = CentroidTracker(maxDisappeared=MAX_DIS, minAppeared=MIN_APP,
                          maxDiff=MAX_DIFF, iomThresh=IOM_THRESH, maxVol=MAX_VOL, metric=METRIC)
 
     # use given prediction for all images, if csv is available
     for img in all_imgs:
-        orig_img = Path(img).name
+        orig_img = os.path.basename(img)
         if len(all_csv_paths) > 1:
             csv_path = [
-                elem for elem in all_csv_paths if orig_img[:-4] == elem.name[:-4]]
+                elem for elem in all_csv_paths if orig_img[:-4] == os.path.basename(elem)[:-4]]
             if len(csv_path) == 0:
                 # no corresponding csv file for this image
                 continue
@@ -261,3 +263,22 @@ def main(args):
     print(f"Nr of spines found: {nr_all_ind}")
 
     print('[INFO] Written predictions to '+csv_output_path+'.')
+
+def main_explicit_args(matching_filename: str, img_path: str, csv_path: str, threshold: float, appeared: int, disappeared: int, theta: float, 
+                        tau: float, save_images: bool, output: str, metric: str, use_offsets: bool,
+                        model: str):
+    
+    csv = os.path.join(csv_path, matching_filename)
+    csv = csv.replace('images', 'csvs').replace('png', 'csv')
+
+    images = os.path.join(img_path, matching_filename)
+    images = images.replace('csvs', 'images').replace('csv', 'png')
+
+    args = argparse.Namespace(threshold=threshold, appeared=appeared, disappeared=disappeared,
+                                theta=theta, tau=tau, save_images=save_images, output=output,
+                                metric=metric, use_offsets=use_offsets, model=model, 
+                                file_save=None, csv=csv, images=images)
+
+    main(args)
+                        
+                                        
