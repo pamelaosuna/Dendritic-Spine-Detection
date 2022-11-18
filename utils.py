@@ -193,7 +193,7 @@ class CentroidTracker():
 
         correctObjects = OrderedDict()
         for objectID in self.objects.keys():
-            if self.appeared[objectID] > self.minAppeared and self.disappeared[objectID] <= self.maxDisappeared:
+            if self.appeared[objectID] >= self.minAppeared and self.disappeared[objectID] <= self.maxDisappeared:
                 correctObjects[objectID] = self.objects[objectID]
         return correctObjects
 
@@ -334,7 +334,7 @@ class CentroidTracker():
             # compare the number of inputCentroids and the number of real
             # existing centroids (not this ones with appeared <= minAppeared)
             object_len = len([1 for key in self.appeared.keys()
-                              if self.appeared[key] > self.minAppeared])
+                              if self.appeared[key] >= self.minAppeared])
             #print('object len', object_len, D.shape)
             if object_len >= D.shape[1]:
                 # loop over the unused row indexes
