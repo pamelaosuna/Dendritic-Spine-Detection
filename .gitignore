@@ -162,3 +162,5 @@ model.zip
 output/prediction/default_model/csvs/
 output/prediction/default_model/images/
 output/tracking/default_model
+
+.vscode/
