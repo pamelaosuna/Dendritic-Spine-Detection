@@ -264,14 +264,14 @@ def main(args):
 
     print('[INFO] Written predictions to '+csv_output_path+'.')
 
-def main_explicit_args(matching_filename: str, img_path: str, csv_path: str, threshold: float, appeared: int, disappeared: int, theta: float, 
+def main_explicit_args(matching_filename: str, files_dir: str, csv_path: str, threshold: float, appeared: int, disappeared: int, theta: float, 
                         tau: float, save_images: bool, output: str, metric: str, use_offsets: bool,
                         model: str):
     
     csv = os.path.join(csv_path, matching_filename)
     csv = csv.replace('images', 'csvs').replace('png', 'csv')
 
-    images = os.path.join(img_path, matching_filename)
+    images = os.path.join(files_dir, matching_filename)
     images = images.replace('csvs', 'images').replace('csv', 'png')
 
     args = argparse.Namespace(threshold=threshold, appeared=appeared, disappeared=disappeared,

@@ -2,17 +2,19 @@ import numpy as np
 import os
 import glob
 import sys
-import tensorflow as tf
-import cv2
 import argparse
 import pandas as pd
 import time
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from spine_tracking.dendritic_spine_detection import utils as detection_utils
 from typing import List, Optional, Tuple
 from pathlib import Path
 sys.path.append("..")
 sys.path.extend(["models/research/object_detection",
                  "model/research", "models/research/slim"])
+
+import tensorflow as tf
+import cv2
 
 # remove deprecation warnings
 # from tensorflow.python.util import deprecation
@@ -272,7 +274,7 @@ def load_model(path: str) -> tf.Graph:
 
 
 def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str, output_csv_path: str,
-                   threshold: float = 0.3, save_csv: bool = True, theta: float = 0.7) -> Tuple[np.ndarray]:
+                   threshold: float = 0.3, save_csv: bool = True, theta: float = 0.7, save_images: bool = False) -> Tuple[np.ndarray]:
     """Predict detection on image
 
     Args:
@@ -339,7 +341,7 @@ def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str,
                 boxes, scores = postprocess(boxes, scores, theta=theta)
 
                 # Visualization of the results of a detection, but only if output_path is provided
-                if output_path is not None:
+                if output_path is not None and save_images:
                     image_np = draw_boxes(
                         image_np, boxes, scores, disable_thresh=True)
                     orig_name = img.split('/')[-1].split('\\')[-1]
@@ -358,7 +360,7 @@ def predict_images(detection_graph: tf.Graph, image_path: str, output_path: str,
 def main(args):
     start = time.time()
     # if it doesn't make sense, print warning
-    if args.use_csv is not None and not args.save_images:
+    if args.use_csv and not args.save_images:
         print("[WARNING] As you are using csv files, not saving any detections will result in doing nothing."
               "So images are saved.")
         args.save_images = True
@@ -400,7 +402,7 @@ def main(args):
     print("[INFO] Starting predictions ...")
     if not args.use_csv:
         _ = predict_images(detection_graph, args.input, output_path, csv_path,
-                        threshold=args.threshold, theta=args.theta)
+                        threshold=args.threshold, theta=args.theta, save_images=args.save_images)
     else:
         changed_df = False
         for img in glob.glob(args.input):
@@ -421,10 +423,11 @@ def main(args):
             rects, classes = df_to_data(img_df)
 
             # Visualization of the results of a detection.
-            image_np = draw_boxes(image_np, rects)
-            orig_name = os.path.abspath(img).split('/')[-1]
-            img_output_path = os.path.join(output_path, orig_name)
-            cv2.imwrite(img_output_path, image_np)
+            if args.save_images:
+                image_np = draw_boxes(image_np, rects)
+                orig_name = os.path.abspath(img).split('/')[-1]
+                img_output_path = os.path.join(output_path, orig_name)
+                cv2.imwrite(img_output_path, image_np)
 
     finished = time.time()
     print(f"Model read in {after_loading_model-start}sec")

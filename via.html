@@ -1538,6 +1538,7 @@ function sel_local_data_file(type) {
   if (invisible_file_input) {
     switch(type) {
     case 'annotations':
+      invisible_file_input.setAttribute('multiple', 'multiple')
       invisible_file_input.accept='.csv,.json';
       invisible_file_input.onchange = import_annotations_from_file;
       break;
@@ -1556,7 +1557,7 @@ function sel_local_data_file(type) {
       console.log('sel_local_data_file() : unknown type ' + type);
       return;
     }
-    invisible_file_input.removeAttribute('multiple');
+    // invisible_file_input.removeAttribute('multiple');
     invisible_file_input.click();
   }
 }
